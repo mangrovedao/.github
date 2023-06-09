@@ -1,0 +1,10 @@
+{
+    "name": "Merge `master` to `develop` workflow",
+    "description": "Automatically creates and manages PRs for merging `master` to `develop`.",
+    "iconName": "octicon sync",
+    "categories": [
+        "CI",
+        "GitFlow"
+    ]
+}
+
