@@ -1,4 +1,4 @@
-# Mangrove DAO
+# Mangrove
 
 Website: [mangrove.exchange](https://mangrove.exchange)
 
