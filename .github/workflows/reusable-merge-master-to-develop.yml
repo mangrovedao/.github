@@ -1,0 +1,144 @@
+# Reusable workflow that automatically creates, updates, or replaces a PR for merging master to develop.
+#
+# NB: Must be called from a workflow that runs on commits to the `master` branch.
+#
+# If there are no merge conflicts, a direct PR from master to develop is used.
+#
+# If there are merge conflicts, a merge branch (merge/auto/master-to-develop) is created
+# from master and the PR is made from the merge branch to develop.
+# This provides a branch to push conflict resolution commits to.
+#
+# If there was a previous PR, we handle it according to the following rules:
+#
+#   if [previous PR was from a merge branch, ie had conflicts] then
+#     write a message telling the user to first merge the old PR, then rerun this workflow
+#     fail the workflow
+#   else
+#     // in the following cases, we know there was no previous PR from a merge branch
+#     if [there are conflicts now] then
+#       close the old PR
+#     // the old PR was direct and we need a direct PR
+#     else 
+#       do nothing, we just keep the existing direct PR from master to develop
+
+name: "Reusable workflow for creating/managing PR's for merging `master` to `develop`"
+
+on:
+  workflow_call:
+    secrets:
+      BOT_GH_PAT_TOKEN:
+        required: true
+
+permissions: write-all
+
+jobs:
+  create_pull_request:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # Fetch all to permit merge between master and develop
+
+      - name: Check for existing pull request
+        env:
+          GH_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
+        run: |
+          pr_from_master_to_develop=$(gh pr list --base develop --head master --state open --json "url" --limit 1 --jq ".[].url")
+          pr_from_merge_branch_to_develop=$(gh pr list --base develop --head merge/auto/master-to-develop --state open --json "url" --limit 1 --jq ".[].url")
+          if [[ -z "$pr_from_master_to_develop" ]] && [[ -z "$pr_from_merge_branch_to_develop" ]]; then
+            echo "No previous open PR was found"
+            echo "pr_exists=false" >> $GITHUB_ENV
+          else
+            echo "pr_exists=true" >> $GITHUB_ENV
+            if [[ ! -z $pr_from_master_to_develop ]]; then
+              pr_url="$pr_from_master_to_develop"
+              echo "pr_url=$pr_url" >> $GITHUB_ENV
+              echo "pr_from_merge_branch=false" >> $GITHUB_ENV
+              echo "Previous direct PR from master to develop found: $pr_url"
+            else
+              pr_url="$pr_from_merge_branch_to_develop"
+              echo "pr_url=$pr_url" >> $GITHUB_ENV
+              echo "pr_from_merge_branch=true" >> $GITHUB_ENV
+              echo "Previous PR from merge branch (merge/auto/master-to-develop) to develop found: $pr_url"
+            fi
+
+            pr_number=${pr_url##*/}
+            echo "pr_number=$pr_number" >> $GITHUB_ENV
+          fi
+
+      - name: Fail if existing pull request with conflicts exists
+        if: env.pr_from_merge_branch == 'true'
+        run: |
+          echo "::error::A PR from 'master' to 'develop' with conflicts already exists: ${{ env.pr_url }} .  Complete that PR first, then re-run this workflow."
+          false
+
+      - name: Initialize mandatory git config
+        run: |
+          git config --global user.name "Mangrove Automation Bot"
+          git config --global user.email automation@mangrove.exchange
+
+      - name: Check for merge conflicts
+        run: |
+          git fetch origin develop:develop
+          
+          git checkout -b temp/merge/develop develop
+          git merge --no-commit master || true
+          
+          conflicts=$(git diff --name-only --diff-filter=U)
+          if [[ -n $conflicts ]]; then
+            echo "has_conflicts=true" >> $GITHUB_ENV
+            echo "Conflicts detected in the following files:
+            
+            $conflicts"
+          else
+            echo "has_conflicts=false" >> $GITHUB_ENV
+          fi
+          
+          git merge --abort
+          git checkout master
+          git branch -D temp/merge/develop
+
+      - name: Print info about re-using existing pull request
+        if: env.has_conflicts != 'true' && env.pr_exists == 'true'
+        run: |
+          pr_url=${{ env.pr_url }}
+          echo "::notice::Existing direct PR from 'master' to 'develop' found: $pr_url .  No need to create a new one."
+
+      - name: Close existing pull request if we must create a new one with conflicts
+        # NB: This step will not run if the previous PR was from a merge branch,
+        #     as the workflow stops at an earlier step in that situation.
+        if: env.pr_exists == 'true' && env.has_conflicts == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
+        run: |
+          gh pr close ${{ env.pr_number }}
+
+      - name: Create pull request
+        if: env.pr_exists != 'true' || env.has_conflicts == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
+        run: |
+          if [[ "${{ env.has_conflicts }}" == 'true' ]]; then
+            pr_branch=merge/auto/master-to-develop
+
+            git checkout -b merge/auto/master-to-develop master
+            git push origin HEAD
+
+            pr_body='Automatically created PR for merging `master` to `develop`.
+            
+            NB: There are merge conflicts that must be resolved manually!
+            A merge branch has been created where you can resolve these conflicts: merge/auto/master-to-develop .'
+            
+          else
+            pr_branch=master
+
+            pr_body='Automatically created PR for merging `master` to `develop`.
+            
+            No merge conflicts were found.'
+          fi          
+
+          pr_url=$(gh pr create --base develop --head "$pr_branch" --title "Merge master into develop" --body "$pr_body" --reviewer "mangrovedao/all-devs")
+          gh pr merge --merge "$pr_url" --auto --subject "Merge branch 'master' into develop"
+
+          echo "::notice::Created PR from 'master' to 'develop': $pr_url ."
