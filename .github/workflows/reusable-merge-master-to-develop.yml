@@ -33,6 +33,7 @@ permissions: write-all
 
 jobs:
   create_pull_request:
+    name: "Create/update PR from 'master' to 'develop'"
     runs-on: ubuntu-latest
 
     steps:
