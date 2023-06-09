@@ -13,6 +13,7 @@ permissions: write-all
 
 jobs:
   call-reusable-workflow:
+    name: "Create/update PR from master to develop"
     uses: mangrovedao/.github/.github/workflows/reusable-merge-master-to-develop.yml@master
     secrets:
       BOT_GH_PAT_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
