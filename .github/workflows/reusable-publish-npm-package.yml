@@ -17,6 +17,10 @@ on:
         required: true
       BOT_NPM_TOKEN:
         required: true
+      BOT_GPG_PRIVATE_KEY:
+        required: true
+      BOT_GPG_PASSPHRASE:
+        required: true
 
 jobs:
   publish:
