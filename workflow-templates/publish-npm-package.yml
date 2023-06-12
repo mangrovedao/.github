@@ -23,7 +23,7 @@ jobs:
   call-reusable-workflow:
     name: "Publish"
     uses: mangrovedao/.github/.github/workflows/reusable-publish-npm-package.yml@master
-    inputs:
+    with:
       versionBumpStrategy: ${{ inputs.versionBumpStrategy }}
     secrets:
       BOT_GH_PAT_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
