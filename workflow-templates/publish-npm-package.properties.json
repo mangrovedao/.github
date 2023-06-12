@@ -1,0 +1,9 @@
+{
+    "name": "Publish npm package",
+    "description": "Publish package to npm.",
+    "iconName": "octicon package-dependents",
+    "categories": [
+        "CI",
+        "npm"
+    ]
+}
