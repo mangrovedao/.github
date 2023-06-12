@@ -3,7 +3,7 @@
 # From the master branch, package bumps can be patch, minor, or major.
 #
 # From the develop branch, package bumps can only be prerelease
-name: "Publish npm package"
+name: "Reusable workflow to publish an npm package"
 
 on:
   workflow_call:
