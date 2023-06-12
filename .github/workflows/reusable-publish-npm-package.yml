@@ -1,0 +1,145 @@
+# Reusable workflow that publishes an npm package with a version bump chosen by the user.
+# 
+# From the master branch, package bumps can be patch, minor, or major.
+#
+# From the develop branch, package bumps can only be prerelease
+name: "Publish npm package"
+
+on:
+  workflow_call:
+    inputs:
+      versionBumpStrategy: # Must be one of: prerelease, patch, minor, or major
+        description: 'Version bump strategy'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    name: Publish new npm package
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0 # All must be fetched in order for `yarn version` to work
+
+      - name: Print workflow info
+        run: |
+          echo "::notice::Branch: ${{ github.ref_name }}"
+          echo "::notice::Revision bump strategy: ${{ inputs.versionBumpStrategy }}"
+          echo "::notice::Started by: ${{ github.actor }}"
+          echo "::notice::Previous package version: $( jq -r '.version' package.json )"
+      
+      - name: Check branch and revision bump
+        run: |
+          versionBumpStrategies=("prerelease" "patch" "minor" "major")
+          if [[ ! " ${versionBumpStrategies[*]} " =~ "$versionBumpStrategy" ]]; then
+            echo "::error::Unsupported version bump strategy: $versionBumpStrategy"
+            false
+          elif [ "${{ github.ref_name }}" == "master" ] && [ ${{ inputs.versionBumpStrategy }} == "prerelease" ]; then
+            echo "::error::Only releases can only be published from the 'master' branch"
+            false
+          elif [ "${{ github.ref_name }}" == "develop" ] && [ ${{ inputs.versionBumpStrategy }} != "prerelease" ]; then
+            echo "::error::Only pre-releases can only be published from the 'develop' branch"
+            false
+          elif [ "${{ github.ref_name }}" != "master" ] && [ "${{ github.ref_name }}" != "develop" ]; then
+            echo "::error::Disallowed branch selected for publishing: ${{ github.ref_name }}. Releases can only be published from 'master' and pre-releases only from 'develop'"
+            false
+          fi
+
+      - name: Yarn setup (caching yarn dependencies)
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: 'yarn'
+        
+      - name: Yarn install
+        run: yarn install --immutable
+        
+      - name: Bump version
+        run: |
+          npm version --no-git-tag-version ${{ inputs.versionBumpStrategy }}
+          PACKAGE_VERSION="$( jq -r '.version' package.json )"
+          echo "PACKAGE_VERSION=$PACKAGE_VERSION" >> "$GITHUB_ENV"
+          echo "::notice::New package version: $PACKAGE_VERSION"
+
+      - name: Create publish branch
+        run: |
+          PUBLISH_BRANCH="publish/v$PACKAGE_VERSION"
+          echo "PUBLISH_BRANCH=$PUBLISH_BRANCH" >> "$GITHUB_ENV"
+          git switch -c "$PUBLISH_BRANCH"
+
+      - name: Select npm version tag
+        run: |
+          if [ "${{ inputs.versionBumpStrategy }}" == "prerelease" ]; then
+            NPM_TAG="next"
+          else
+            NPM_TAG="latest"
+          fi
+          echo "NPM_TAG=$NPM_TAG" >> "$GITHUB_ENV"
+          echo "::notice::Package tag: $NPM_TAG"
+          
+      - name: Update CHANGELOG
+        run: |
+          cat << EOF > CHANGELOG-new.md
+          # Next version
+          
+          # $PACKAGE_VERSION
+          
+          EOF
+          tail --lines=+3 CHANGELOG.md >>CHANGELOG-new.md
+          mv CHANGELOG-new.md CHANGELOG.md
+
+          RELEASE_NOTES="$( sed -n "/^# ${{ env.PACKAGE_VERSION }}/,/^#/p" CHANGELOG.md | grep -v "^#" | sed -e :a -e '/./,$!d;/^\n*$/{$d;N;};/\n$/ba' )"
+          echo "RELEASE_NOTES=$RELEASE_NOTES" >> "$GITHUB_ENV"
+          echo "${{ env.RELEASE_NOTES }}"
+
+      - name: Publish package to npm
+        run: |
+          echo "npmAuthToken: \"${{ secrets.BOT_NPM_TOKEN }}\"" >> .yarnrc.yml
+          yarn npm publish --access public --tag $NPM_TAG
+
+      - name: Initialize mandatory git config
+        run: |
+          git config --global user.name "Mangrove Automation Bot"
+          git config --global user.email automation@mangrove.exchange
+      
+      - name: Import GPG key
+        uses: crazy-max/ghaction-import-gpg@v5
+        with:
+          gpg_private_key: ${{ secrets.BOT_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.BOT_GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_commit_gpgsign: true
+          
+      - name: git commit and tag
+        run: |
+          git add package.json CHANGELOG.md
+          git commit -S --file - << EOF
+          chore: Publish npm package v$PACKAGE_VERSION
+          
+          Published by GitHub user: ${{ github.actor }}
+          EOF
+
+          git tag -m "v${{ env.PACKAGE_VERSION }}" -s "v${{ env.PACKAGE_VERSION }}"
+          git push --set-upstream origin HEAD
+          git push --tags
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
+        run: |
+          gh release create "v${{ env.PACKAGE_VERSION }}" --title "v${{ env.PACKAGE_VERSION }}" --notes "${{ env.RELEASE_NOTES }}"
+
+      - name: Create pull request
+        env:
+          GH_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
+        run: |
+          PR_BODY="PR for merging publish branch.
+          
+          Please review the version change and CHANGELOG. If anything is off, please push corrections to this PR before approving and update the GitHub release for v$PACKAGE_VERSION."
+          
+          PR_URL=$(gh pr create --base ${{ github.ref }} --head "$PUBLISH_BRANCH" --title "Published v$PACKAGE_VERSION" --body "$PR_BODY" --reviewer "mangrovedao/all-devs")
+          gh pr merge --squash "$PR_URL" --auto --subject "Merge $PUBLISH_BRANCH to ${{ github.ref_name }}"
+
+          echo "::notice::Created PR from $PUBLISH_BRANCH to ${{ github.ref_name }}: $PR_URL ."
