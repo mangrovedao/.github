@@ -24,6 +24,9 @@ We use the following naming convention: `<telling-workflow-name>.yml`.
 
 Workflow templates can be copied to our other repos either manually or by going to *Actions -> New workflow* in the target repo and selecting the workflow template in the "By Mangrove" section.
 
+Workflow templates should reference reusable templates on `master`. This ensures that we can control when a reusable workflow is "production ready" and should be used by our other repos.
+See also the "Branches" section below.
+
 NB: Workflow templates are also called "starter workflows" in the GitHub documentation.
 
 
@@ -34,3 +37,11 @@ This ensures that the secret is available in all our repos.
 Please use telling names for secrets to ease maintenance.
 
 Secrets must be passed explicitly from the calling workflow to the reusable workflow. See the existing workflow templates for how to do this.
+
+
+# Branches
+Workflows should be created/changed and tested on the `develop` branch.
+
+Once ready, the changes should be merged to the `master` branch.
+
+This ensures that we can control when a reusable workflow is "production ready" and should be used by our other repos: Those repos always point to the reusable workflows on `master`.
