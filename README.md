@@ -1,4 +1,4 @@
-This repo contains reusable workflows and workflow templates (aka "starter workflows" in the GitHub documentation) for use in the Mangrove repos.
+This repo contains reusable workflows and workflow templates for use in the Mangrove repos.
 
 # About this repo and its peculiar name (`.github`)
 The `.github` repo name has special meaning in GitHub, see [Creating starter workflows for your organization](https://docs.github.com/en/actions/using-workflows/creating-starter-workflows-for-your-organization).
@@ -17,8 +17,31 @@ This wrapper worfklow will be a copy and should therefore be minimal in order to
 
 For each reusable workflow, we make such a wrapper workflow in the form of a so-called "workflow template", see the following section.
 
+
 ## Workflow templates
 Workflow templates are located in [workflow-templates](workflow-templates). This location is special and cannot be changed. Also, GitHub does not support organizing this into folders.
 We use the following naming convention: `<telling-workflow-name>.yml`.
 
 Workflow templates can be copied to our other repos either manually or by going to *Actions -> New workflow* in the target repo and selecting the workflow template in the "By Mangrove" section.
+
+Workflow templates should reference reusable templates on `master`. This ensures that we can control when a reusable workflow is "production ready" and should be used by our other repos.
+See also the "Branches" section below.
+
+NB: Workflow templates are also called "starter workflows" in the GitHub documentation.
+
+
+## Secrets at the org level
+Many workflows require secrets to work, such as an GPG key for commit signing. Such secrets should be defined at the organization level: https://github.com/organizations/mangrovedao/settings/secrets/actions
+This ensures that the secret is available in all our repos.
+
+Please use telling names for secrets to ease maintenance.
+
+Secrets must be passed explicitly from the calling workflow to the reusable workflow. See the existing workflow templates for how to do this.
+
+
+# Branches
+Workflows should be created/changed and tested on the `develop` branch.
+
+Once ready, the changes should be merged to the `master` branch.
+
+This ensures that we can control when a reusable workflow is "production ready" and should be used by our other repos: Those repos always point to the reusable workflows on `master`.
