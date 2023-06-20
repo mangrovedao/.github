@@ -100,7 +100,13 @@ jobs:
           mv CHANGELOG-new.md CHANGELOG.md
 
           RELEASE_NOTES="$( sed -n "/^# ${{ env.PACKAGE_VERSION }}/,/^#/p" CHANGELOG.md | grep -v "^#" | sed -e :a -e '/./,$!d;/^\n*$/{$d;N;};/\n$/ba' )"
-          echo "RELEASE_NOTES=$RELEASE_NOTES" >> "$GITHUB_ENV"
+
+          # The following is needed for multi-line env vars, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
+          EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
+          echo "RELEASE_NOTES<<$EOF" >> "$GITHUB_ENV"
+          echo "$RELEASE_NOTES" >> "$GITHUB_ENV"
+          echo "$EOF" >> "$GITHUB_ENV"
+
           echo "${{ env.RELEASE_NOTES }}"
 
       - name: Publish package to npm
