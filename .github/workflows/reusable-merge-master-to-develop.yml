@@ -141,6 +141,5 @@ jobs:
 
           pr_url=$(gh pr create --base develop --head "$pr_branch" --title "Merge master into develop" --body "$pr_body" --reviewer "mangrovedao/all-devs")
           gh pr merge --merge "$pr_url" --auto --subject "Merge branch 'master' into develop"
-          gh pr review --approve "$pr_url"
 
           echo "::notice::Created PR from 'master' to 'develop': $pr_url ."
