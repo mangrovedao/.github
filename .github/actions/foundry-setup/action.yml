@@ -7,7 +7,7 @@ runs:
   - name: Install Foundry
     uses: foundry-rs/foundry-toolchain@v1
     with:
-      version: nightly-bff4ed912bb023d7bf9b20eda581aa4867a1cf70
+      version: nightly
       # version: nightly <- the newset version
       # version: nightly-bff4ed912bb023d7bf9b20eda581aa4867a1cf70 <- example of a specific version
     
