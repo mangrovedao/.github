@@ -33,7 +33,7 @@ jobs:
           fetch-depth: 0 # All must be fetched in order for `yarn version` to work
 
       - name: Foundry Setup
-        uses: ./.github/actions/foundry-setup
+        uses: mangrovedao/.github/.github/actions/foundry-setup@master
 
       - name: Print workflow info
         run: |
