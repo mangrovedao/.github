@@ -124,7 +124,7 @@ jobs:
             pr_branch=merge/auto/master-to-develop
 
             git checkout -b merge/auto/master-to-develop master
-            git push origin HEAD
+            git push origin HEAD --force
 
             pr_body='Automatically created PR for merging `master` to `develop`.
             
