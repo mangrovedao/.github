@@ -144,7 +144,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
         run: |
-          gh release create "v${{ env.PACKAGE_VERSION }}" --title "v${{ env.PACKAGE_VERSION }}" --notes "${{ env.RELEASE_NOTES }}"
+          if [ "${{ inputs.versionBumpStrategy }}" == "prerelease" ]; then
+            RELEASE_FLAG="--prerelease"
+          else
+            RELEASE_FLAG="--latest"
+          fi
+          echo "RELEASE_FLAG=$RELEASE_FLAG" >> "$GITHUB_ENV"
+          gh release create "v${{ env.PACKAGE_VERSION }}" {{ env.RELEASE_FLAG }} --title "v${{ env.PACKAGE_VERSION }}" --notes "${{ env.RELEASE_NOTES }}"
 
       - name: Create pull request
         env:
