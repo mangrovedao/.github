@@ -149,8 +149,7 @@ jobs:
           else
             RELEASE_FLAG="--latest"
           fi
-          echo "RELEASE_FLAG=$RELEASE_FLAG" >> "$GITHUB_ENV"
-          gh release create "v${{ env.PACKAGE_VERSION }}" ${{ env.RELEASE_FLAG }} --title "v${{ env.PACKAGE_VERSION }}" --notes "${{ env.RELEASE_NOTES }}"
+          gh release create "v${{ env.PACKAGE_VERSION }}" $RELEASE_FLAG --title "v${{ env.PACKAGE_VERSION }}" --notes "${{ env.RELEASE_NOTES }}"
 
       - name: Create pull request
         env:
