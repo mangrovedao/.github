@@ -1,0 +1,20 @@
+name: Check changelog updated
+description: Checks if changelog has been updated; otherwise, requires label to continue
+
+runs:
+  using: composite
+  steps:
+    - uses: dorny/paths-filter@v2
+      id: changes
+      with:
+        filters: |
+          changelog:
+            - 'CHANGELOG.md'
+    - name: Fail if CHANGELOG has not been changed unless PR has 'skip changelog' label
+      if: >
+          (    github.event_name == 'pull_request'
+           &&  !contains(github.event.pull_request.labels.*.name,'skip changelog') 
+           &&  steps.changes.outputs.changelog != 'true')
+      uses: actions/github-script@v6
+      with:
+        script: core.setFailed('You have not updated CHANGELOG.md. PR must be marked \'skip changelog\' to skip.')
