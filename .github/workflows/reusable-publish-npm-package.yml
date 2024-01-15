@@ -127,7 +127,18 @@ jobs:
           passphrase: ${{ secrets.BOT_GPG_PASSPHRASE }}
           git_user_signingkey: true
           git_commit_gpgsign: true
-          
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
+        run: |
+          if [ "${{ inputs.versionBumpStrategy }}" == "prerelease" ]; then
+            RELEASE_FLAG="--prerelease"
+          else
+            RELEASE_FLAG="--latest"
+          fi
+          echo release create "v$PACKAGE_VERSION" $RELEASE_FLAG --title "v$PACKAGE_VERSION" --notes "$RELEASE_NOTES"
+
       - name: git commit and tag
         run: |
           git add package.json CHANGELOG.md
@@ -140,17 +151,6 @@ jobs:
           git tag -m "v${{ env.PACKAGE_VERSION }}" -s "v${{ env.PACKAGE_VERSION }}"
           git push --set-upstream origin HEAD
           git push --tags
-
-      - name: Create GitHub release
-        env:
-          GH_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
-        run: |
-          if [ "${{ inputs.versionBumpStrategy }}" == "prerelease" ]; then
-            RELEASE_FLAG="--prerelease"
-          else
-            RELEASE_FLAG="--latest"
-          fi
-          echo release create "v$PACKAGE_VERSION" $RELEASE_FLAG --title "v$PACKAGE_VERSION" --notes "$RELEASE_NOTES"
 
       - name: Create pull request
         env:
