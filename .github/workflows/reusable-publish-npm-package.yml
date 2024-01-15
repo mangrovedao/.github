@@ -116,7 +116,7 @@ jobs:
       - name: Publish package to npm
         run: |
           echo "npmAuthToken: \"${{ secrets.BOT_NPM_TOKEN }}\"" >> .yarnrc.yml
-          yarn npm publish --access public --tag $NPM_TAG
+          echo npm publish --access public --tag $NPM_TAG
 
       - name: Initialize mandatory git config
         run: |
@@ -153,7 +153,7 @@ jobs:
           else
             RELEASE_FLAG="--latest"
           fi
-          gh release create "v$PACKAGE_VERSION" $RELEASE_FLAG --title "v$PACKAGE_VERSION" --notes "$RELEASE_NOTES"
+          echo release create "v$PACKAGE_VERSION" $RELEASE_FLAG --title "v$PACKAGE_VERSION" --notes "$RELEASE_NOTES"
 
       - name: Create pull request
         env:
