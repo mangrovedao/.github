@@ -12,6 +12,10 @@ on:
         description: 'Version bump strategy'
         required: true
         type: string
+      withFoundry:
+        description: 'Whether to setup foundry'
+        required: false
+        type: boolean
     secrets:
       BOT_GH_PAT_TOKEN:
         required: true
@@ -31,7 +35,9 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0 # All must be fetched in order for `yarn version` to work
-
+      - name: Foundry Setup
+        uses: mangrovedao/.github/.github/actions/foundry-setup@master
+        if: ${{ inputs.withFoundry }}
       - name: Print workflow info
         run: |
           echo "::notice::Branch: ${{ github.ref_name }}"
