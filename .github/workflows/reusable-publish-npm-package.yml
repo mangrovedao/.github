@@ -57,9 +57,6 @@ jobs:
           elif [ "${{ github.ref_name }}" == "develop" ] && [ ${{ inputs.versionBumpStrategy }} != "prerelease" ]; then
             echo "::error::Only pre-releases can only be published from the 'develop' branch"
             false
-          elif [ "${{ github.ref_name }}" != "master" ] && [ "${{ github.ref_name }}" != "develop" ]; then
-            echo "::error::Disallowed branch selected for publishing: ${{ github.ref_name }}. Releases can only be published from 'master' and pre-releases only from 'develop'"
-            false
           fi
 
       - name: Yarn setup (caching yarn dependencies)
