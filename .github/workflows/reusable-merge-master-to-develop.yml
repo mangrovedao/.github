@@ -139,7 +139,7 @@ jobs:
             No merge conflicts were found.'
           fi          
 
-          pr_url=$(gh pr create --base develop --head "$pr_branch" --title "Merge master into develop" --body "$pr_body" --reviewer "mangrovedao/all-devs")
+          pr_url=$(gh pr create --base develop --head "$pr_branch" --label "skip changelog" --title "Merge master into develop" --body "$pr_body" --reviewer "mangrovedao/all-devs")
           gh pr merge --merge "$pr_url" --auto --subject "Merge branch 'master' into develop"
 
           echo "::notice::Created PR from 'master' to 'develop': $pr_url ."
