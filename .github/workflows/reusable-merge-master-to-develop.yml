@@ -18,7 +18,7 @@
 #     if [there are conflicts now] then
 #       close the old PR
 #     // the old PR was direct and we need a direct PR
-#     else 
+#     else
 #       do nothing, we just keep the existing direct PR from master to develop
 
 name: "Reusable workflow for creating/managing PR's for merging `master` to `develop`"
@@ -82,10 +82,10 @@ jobs:
       - name: Check for merge conflicts
         run: |
           git fetch origin develop:develop
-          
+
           git checkout -b temp/merge/develop develop
           git merge --no-ff --no-commit master || true
-          
+
           conflicts=$(git diff --name-only --diff-filter=U)
           if [[ -n $conflicts ]]; then
             echo "has_conflicts=true" >> $GITHUB_ENV
@@ -95,7 +95,7 @@ jobs:
           else
             echo "has_conflicts=false" >> $GITHUB_ENV
           fi
-          
+
           git merge --abort
           git checkout master
           git branch -D temp/merge/develop
@@ -139,7 +139,7 @@ jobs:
             No merge conflicts were found.'
           fi          
 
-          pr_url=$(gh pr create --base develop --head "$pr_branch" --title "Merge master into develop" --body "$pr_body" --reviewer "mangrovedao/all-devs")
+          pr_url=$(gh pr create --base develop --head "$pr_branch" --label "skip changelog" --title "Merge master into develop" --body "$pr_body" --reviewer "mangrovedao/all-devs")
           gh pr merge --merge "$pr_url" --auto --subject "Merge branch 'master' into develop"
 
           echo "::notice::Created PR from 'master' to 'develop': $pr_url ."
