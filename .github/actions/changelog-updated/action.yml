@@ -10,13 +10,6 @@ runs:
         filters: |
           changelog:
             - 'CHANGELOG.md'
-    - name: debug output
-      shell: bash
-      run: |
-        echo "githubeventname ${{  github.event_name == 'pull_request' }}"
-        echo "label ${{!contains(github.event.pull_request.labels.*.name,'skip changelog')}}"
-        echo "dorny ${{steps.changes.outputs.changelog != 'true'}}"
-
     - name: Fail if CHANGELOG has not been changed unless PR has 'skip changelog' label
       if: >
           (    github.event_name == 'pull_request'
