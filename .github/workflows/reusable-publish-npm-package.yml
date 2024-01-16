@@ -1,5 +1,5 @@
 # Reusable workflow that publishes an npm package with a version bump chosen by the user.
-# 
+#
 # From the master branch, package bumps can be patch, minor, or major.
 #
 # From the develop branch, package bumps can only be prerelease
@@ -9,9 +9,13 @@ on:
   workflow_call:
     inputs:
       versionBumpStrategy: # Must be one of: prerelease, patch, minor, or major
-        description: 'Version bump strategy'
+        description: "Version bump strategy"
         required: true
         type: string
+      withFoundry:
+        description: "Whether to setup foundry"
+        required: false
+        type: boolean
     secrets:
       BOT_GH_PAT_TOKEN:
         required: true
@@ -31,14 +35,16 @@ jobs:
       - uses: actions/checkout@v3
         with:
           fetch-depth: 0 # All must be fetched in order for `yarn version` to work
-
+      - name: Foundry Setup
+        uses: mangrovedao/.github/.github/actions/foundry-setup@master
+        if: ${{ inputs.withFoundry }}
       - name: Print workflow info
         run: |
           echo "::notice::Branch: ${{ github.ref_name }}"
           echo "::notice::Revision bump strategy: ${{ inputs.versionBumpStrategy }}"
           echo "::notice::Started by: ${{ github.actor }}"
           echo "::notice::Previous package version: $( jq -r '.version' package.json )"
-      
+
       - name: Check branch and revision bump
         run: |
           versionBumpStrategies=("prerelease" "patch" "minor" "major")
@@ -60,11 +66,11 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16
-          cache: 'yarn'
-        
+          cache: "yarn"
+
       - name: Yarn install
         run: yarn install --immutable
-        
+
       - name: Bump version
         run: |
           npm version --no-git-tag-version ${{ inputs.versionBumpStrategy }}
@@ -87,14 +93,14 @@ jobs:
           fi
           echo "NPM_TAG=$NPM_TAG" >> "$GITHUB_ENV"
           echo "::notice::Package tag: $NPM_TAG"
-          
+
       - name: Update CHANGELOG
         run: |
           cat << EOF > CHANGELOG-new.md
           # Next version
-          
+
           # $PACKAGE_VERSION
-          
+
           EOF
           tail --lines=+3 CHANGELOG.md >>CHANGELOG-new.md
           mv CHANGELOG-new.md CHANGELOG.md
@@ -107,8 +113,6 @@ jobs:
           echo "$RELEASE_NOTES" >> "$GITHUB_ENV"
           echo "$EOF" >> "$GITHUB_ENV"
 
-          echo "${{ env.RELEASE_NOTES }}"
-
       - name: Publish package to npm
         run: |
           echo "npmAuthToken: \"${{ secrets.BOT_NPM_TOKEN }}\"" >> .yarnrc.yml
@@ -118,7 +122,7 @@ jobs:
         run: |
           git config --global user.name "Mangrove Automation Bot"
           git config --global user.email automation@mangrove.exchange
-      
+
       - name: Import GPG key
         uses: crazy-max/ghaction-import-gpg@v5
         with:
@@ -126,13 +130,13 @@ jobs:
           passphrase: ${{ secrets.BOT_GPG_PASSPHRASE }}
           git_user_signingkey: true
           git_commit_gpgsign: true
-          
+
       - name: git commit and tag
         run: |
           git add package.json CHANGELOG.md
           git commit -S --file - << EOF
           chore: Publish npm package v$PACKAGE_VERSION
-          
+
           Published by GitHub user: ${{ github.actor }}
           EOF
 
@@ -149,16 +153,16 @@ jobs:
           else
             RELEASE_FLAG="--latest"
           fi
-          gh release create "v${{ env.PACKAGE_VERSION }}" $RELEASE_FLAG --title "v${{ env.PACKAGE_VERSION }}" --notes "${{ env.RELEASE_NOTES }}"
+          gh release create "v$PACKAGE_VERSION" $RELEASE_FLAG --title "v$PACKAGE_VERSION" --notes "$RELEASE_NOTES"
 
       - name: Create pull request
         env:
           GH_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
         run: |
           PR_BODY="PR for merging publish branch.
-          
+
           Please review the version change and CHANGELOG. If anything is off, please push corrections to this PR before approving and update the GitHub release for v$PACKAGE_VERSION."
-          
+
           PR_URL=$(gh pr create --base ${{ github.ref }} --head "$PUBLISH_BRANCH" --title "Published v$PACKAGE_VERSION" --body "$PR_BODY" --reviewer "mangrovedao/all-devs")
           gh pr merge --squash "$PR_URL" --auto --subject "Merge $PUBLISH_BRANCH to ${{ github.ref_name }}"
 
