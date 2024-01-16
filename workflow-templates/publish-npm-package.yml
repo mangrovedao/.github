@@ -25,6 +25,7 @@ jobs:
     uses: mangrovedao/.github/.github/workflows/reusable-publish-npm-package.yml@master
     with:
       versionBumpStrategy: ${{ inputs.versionBumpStrategy }}
+      withFoundry: false
     secrets:
       BOT_GH_PAT_TOKEN: ${{ secrets.BOT_GH_PAT_TOKEN }}
       BOT_NPM_TOKEN: ${{ secrets.BOT_NPM_TOKEN }}
