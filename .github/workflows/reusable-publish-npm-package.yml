@@ -87,7 +87,8 @@ jobs:
 
       - name: Select npm version tag
         run: |
-          if [ "${{ inputs.versionBumpStrategy }}" == "prerelease" ]; then
+          prereleaseBumpStrategies=("prerelease" "prepatch" "preminor" "premajor")
+          if [[ " ${prereleaseBumpStrategies[*]} " =~ "$versionBumpStrategy" ]]; then
             NPM_TAG="next"
           else
             NPM_TAG="latest"
