@@ -15,6 +15,9 @@ on:
         type: choice
         options:
         - prerelease
+        - preminor
+        - prepatch
+        - premajor
         - patch
         - minor
         - major

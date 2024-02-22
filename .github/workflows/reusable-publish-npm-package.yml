@@ -8,7 +8,7 @@ name: "Reusable workflow to publish an npm package"
 on:
   workflow_call:
     inputs:
-      versionBumpStrategy: # Must be one of: prerelease, patch, minor, or major
+      versionBumpStrategy: # Must be one of: prerelease, prepatch, preminor, premajor, patch, minor, or major
         description: "Version bump strategy"
         required: true
         type: string
@@ -47,14 +47,15 @@ jobs:
 
       - name: Check branch and revision bump
         run: |
-          versionBumpStrategies=("prerelease" "patch" "minor" "major")
-          if [[ ! " ${versionBumpStrategies[*]} " =~ "$versionBumpStrategy" ]]; then
+          prereleaseBumpStrategies=("prerelease" "prepatch" "preminor" "premajor")
+          releaseBumpStrategies=("patch" "minor" "major")
+          if [[ ! " ${prereleaseBumpStrategies[*]} " =~ "$versionBumpStrategy" ]] && [[ ! " ${releaseBumpStrategies[*]} " =~ "$versionBumpStrategy" ]]; then
             echo "::error::Unsupported version bump strategy: $versionBumpStrategy"
             false
-          elif [ "${{ github.ref_name }}" == "master" ] && [ ${{ inputs.versionBumpStrategy }} == "prerelease" ]; then
+          elif [ "${{ github.ref_name }}" == "master" ] && [[ ! " ${releaseBumpStrategies[*]} " =~ "$versionBumpStrategy" ]]; then
             echo "::error::Only releases can only be published from the 'master' branch"
             false
-          elif [ "${{ github.ref_name }}" == "develop" ] && [ ${{ inputs.versionBumpStrategy }} != "prerelease" ]; then
+          elif [ "${{ github.ref_name }}" == "develop" ] && [[ ! " ${prereleaseBumpStrategies[*]} " =~ "$versionBumpStrategy" ]]; then
             echo "::error::Only pre-releases can only be published from the 'develop' branch"
             false
           elif [ "${{ github.ref_name }}" != "master" ] && [ "${{ github.ref_name }}" != "develop" ]; then
