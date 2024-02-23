@@ -98,6 +98,8 @@ jobs:
 
       - name: Update CHANGELOG
         run: |
+          RELEASE_NOTES="$( awk '/^# /{if(seen){exit} else {seen=1; next}} seen' CHANGELOG.md | sed '/./,$!d' )"
+
           cat << EOF > CHANGELOG-new.md
           # Next version
 
@@ -106,8 +108,6 @@ jobs:
           EOF
           tail --lines=+3 CHANGELOG.md >>CHANGELOG-new.md
           mv CHANGELOG-new.md CHANGELOG.md
-
-          RELEASE_NOTES="$( sed -n "/^# ${{ env.PACKAGE_VERSION }}/,/^#/p" CHANGELOG.md | grep -v "^#" | sed -e :a -e '/./,$!d;/^\n*$/{$d;N;};/\n$/ba' )"
 
           # The following is needed for multi-line env vars, see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#multiline-strings
           EOF=$(dd if=/dev/urandom bs=15 count=1 status=none | base64)
