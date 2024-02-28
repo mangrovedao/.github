@@ -87,11 +87,11 @@ jobs:
 
       - name: Select npm version tag
         run: |
-          prereleaseBumpStrategies=("prerelease" "prepatch" "preminor" "premajor")
-          if [[ " ${prereleaseBumpStrategies[*]} " =~ "$versionBumpStrategy" ]]; then
-            NPM_TAG="next"
-          else
+          releaseBumpStrategies=("patch" "minor" "major")
+          if [[ " ${releaseBumpStrategies[*]} " =~ "$versionBumpStrategy" ]]; then
             NPM_TAG="latest"
+          else
+            NPM_TAG="next"
           fi
           echo "NPM_TAG=$NPM_TAG" >> "$GITHUB_ENV"
           echo "::notice::Package tag: $NPM_TAG"
