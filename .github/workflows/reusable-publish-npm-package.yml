@@ -55,7 +55,7 @@ jobs:
           elif [ "${{ github.ref_name }}" == "master" ] && [[ ! " ${releaseBumpStrategies[*]} " =~ "$versionBumpStrategy" ]]; then
             echo "::error::Only releases can only be published from the 'master' branch"
             false
-          elif [ "${{ github.ref_name }}" == "develop" ] && [[ ! " ${prereleaseBumpStrategies[*]} " =~ "$versionBumpStrategy" ]]; then
+          elif [ "${{ github.ref_name }}" == "develop" ] && [[ " ${releaseBumpStrategies[*]} " =~ "$versionBumpStrategy" ]]; then
             echo "::error::Only pre-releases can only be published from the 'develop' branch"
             false
           elif [ "${{ github.ref_name }}" != "master" ] && [ "${{ github.ref_name }}" != "develop" ]; then
