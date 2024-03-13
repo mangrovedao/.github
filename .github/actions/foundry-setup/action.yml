@@ -7,9 +7,9 @@ runs:
   - name: Install Foundry
     uses: foundry-rs/foundry-toolchain@v1
     with:
-      version: nightly
       # version: nightly <- the newest version
-      # version: nightly-bff4ed912bb023d7bf9b20eda581aa4867a1cf70 <- example of a specific version
+      # 2024-03-13: The latest releases have a bug that cause a MemoryLimitOOG in some tests, so we pin to a working version
+      version: nightly-de33b6af53005037b463318d2628b5cfcaf39916
     
   - name: Show Foundry version
     shell: bash
